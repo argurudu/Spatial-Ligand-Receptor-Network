@@ -10,7 +10,7 @@ library(broom)
 library(devtools)
 library(SCEVAN)
 
-#Canonical Markers for all clustered cell types, appended to differentially-expressed cell type markers
+#Canonical Markers for all clustered cell types, appended to differentially-expressed cell type markers produced by scSignalMap
 MANUALLY_DEFINED_MARKERS = list(
   oligo = c('MBP', 'PLP1','MOG','MOBP','GPR37'),
   mg_activated = c('SPP1','TNF','AIF1'),
@@ -58,6 +58,22 @@ correlation_calc = function(expr_mat, eigengenes) {
 #### Main Seurat Pipeline ####
 ##############################
 
-DATA_PATH = ""
+DATA_PATH = "spatial_samples/<sample>"
+
+run_spatial_pipeline = function(sample_id, data_path, coordinates_files, annotated_image_file, remaining_region, sct_assay = "Spatial", cores = 4) {
+
+  #Load Seurat Object with annotated image
+  print("Loading Spatial Data for...", sample_id, "...\n")
+  image = Read10X_Image(image.dir = file.path(data_path, "spatial"),
+                       image.name = annotated_image_file)
+  seurat_object = Load10X_Spatial(data.dir = data_path, image = image)
+
+  #Loop over files with coordinates for subsets
+  region_subsets = list()
+  for (i in seq_along(coordinates_files)) {
+    region_name = names(coordinates_files)[i]
+
+}
+
 
 #Load Seurat Object with Subset-Annotated Image
