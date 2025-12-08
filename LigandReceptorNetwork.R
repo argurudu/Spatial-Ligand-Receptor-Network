@@ -8,6 +8,7 @@ library(readxl)
 library(biomaRt)
 library(broom)
 library(devtools)
+library(readr)
 install_github("miccec/yaGST")
 install_github("AntonioDeFalco/SCEVAN")
 library(SCEVAN)
@@ -145,7 +146,7 @@ run_spatial_pipeline = function(sample_id, data_path, coordinates_files, annotat
   #Run SCTransform
   for (region in names(region_subsets)) {
     cat("Running SCTransform on region: ", region, "...")
-    region_subsets[[region]] <- SCTransform(region_subsets[[region]], assay = sct_assay, verbose = FALSE)
+    region_subsets[[region]] = SCTransform(region_subsets[[region]], assay = sct_assay, verbose = FALSE)
   }
 
   #Compute eigengenes for each subset
@@ -177,15 +178,15 @@ run_spatial_pipeline = function(sample_id, data_path, coordinates_files, annotat
     expr_mat = region_subsets[[region]]@assays$SCT@scale.data
     eigengenes = region_eigengenes[[region]]
     
-    # Ligand correlations
+    #Ligand correlations
     ligands_present = intersect(ligands, rownames(expr_mat))
     cor_ligands = correlation_calc(expr_mat[ligands_present, , drop=FALSE], eigengenes)
     
-    # Receptor correlations
+    #Receptor correlations
     receptors_present = intersect(receptors, rownames(expr_mat))
     cor_receptors = correlation_calc(expr_mat[receptors_present, , drop=FALSE], eigengenes)
     
-    # Store results
+    #Store results
     region_correlations[[region]] = list(
       ligand_vs_eigengene = cor_ligands,
       receptor_vs_eigengene = cor_receptors
@@ -196,6 +197,90 @@ run_spatial_pipeline = function(sample_id, data_path, coordinates_files, annotat
 }
 
 #Calculate median eigengene correlations
-median_eigengene_correlations = function(){
+median_eigengene_correlations = function(
+  correlation_threshold,
+  histological_regions = c("leading_edge", "cellular_tumor", "infiltrating_tumor"),
+  ligand_dir = ".../spatial-seq/L_vs_markers",
+  receptor_dir = ".../spatial-seq/R_vs_markers",
+  lr_pairs_file = ".../spatial-seq/LR/LR_pairs_output_GSE197543.csv",
+  output_dir = ".../spatial-seq/mined_correlations"
+) {
+  if(!dir.exists(output_dir)) dir.create(output_dir)
   
+  #Read LR pairs
+  lr_pairs = read_csv(lr_pairs_file) %>% distinct(Ligand, Receptor, .keep_all = TRUE)
+  
+  #Define markers
+  non_tumor_eigengenes = c('macrophage_m1','macrophage_m2','bcell','endothelial','smooth_muscle',
+                            'cd4_tcell','nk','cd8_tcell','neutrophil','mg_activated','oligo','monocyte',
+                            'mg_quiescent','tumor')
+  tumor_eigengenes = c('tumor')
+  
+  #Function to compute median correlation per region
+  compute_median = function(files_dir, prefix) {
+    region_medians = list()
+    for(region in histological_regions) {
+      files = list.files(files_dir, pattern = region, full.names = TRUE)
+      correlation_list = lapply(files, function(f) read_csv(f, col_types = cols(), show_col_types = FALSE))
+      
+      #Get all unique rownames and colnames
+      all_rows = unique(unlist(lapply(correlation_list, function(df) df[[1]])))
+      all_cols = unique(unlist(lapply(correlation_list, function(df) colnames(df)[-1])))
+      
+      #Build median correlation matrix
+      median_mat = matrix(NA, nrow = length(all_rows), ncol = length(all_cols),
+                           dimnames = list(all_rows, all_cols))
+      for (r in all_rows) {
+        for (c in all_cols) {
+          vals = sapply(correlation_list, function(df) {
+            if (r %in% df[[1]] && c %in% colnames(df)) {
+              df_val = df[df[[1]] == r, c, drop = TRUE]
+              if (length(df_val) == 0) return(NA) else return(df_val)
+            } else return(NA)
+          })
+          vals = vals[!is.na(vals)]
+          if(length(vals) > 0) median_mat[r, c] = median(vals)
+        }
+      }
+      
+      region_medians[[region]] = as.data.frame(median_mat)
+      write_csv(region_medians[[region]], file.path(output_dir, paste0(prefix, "_vs_eigengene_correlation_spearman_median_", region, ".csv")))
+    }
+    return(region_medians)
+  }
+  
+  #Compute medians for ligands and receptors
+  ligand_medians = compute_median(ligand_dir, "ligand")
+  receptor_medians = compute_median(receptor_dir, "receptor")
+  
+  #Filter meaningful LR pairs
+  results = data.frame()
+  for(ligand_region in histological_regions) {
+    for(receptor_region in histological_regions) {
+      ligand_df = ligand_medians[[ligand_region]]
+      receptor_df = receptor_medians[[receptor_region]]
+      
+      filtered_ligands = expand.grid(Ligand = rownames(ligand_df), Sending_Cell_Type = non_tumor_eigengenes) %>%
+        rowwise() %>%
+        mutate(Ligand_Correlation = ligand_df[ Ligand, Sending_Cell_Type ]) %>%
+        filter(!is.na(Ligand_Correlation) & Ligand_Correlation >= correlation_threshold)
+      
+      filtered_receptors = expand.grid(Receptor = rownames(receptor_df), Receiving_Cell_Type = tumor_eigengenes) %>%
+        rowwise() %>%
+        mutate(Receptor_Correlation = receptor_df[ Receptor, Receiving_Cell_Type ]) %>%
+        filter(!is.na(Receptor_Correlation) & Receptor_Correlation >= correlation_threshold)
+      
+      meaningful_pairs = lr_pairs %>%
+        inner_join(filtered_ligands, by = c("Ligand")) %>%
+        inner_join(filtered_receptors, by = c("Receptor")) %>%
+        mutate(Ligand_Histological_Type = ligand_region,
+               Receptor_Histological_Type = receptor_region) %>%
+        select(Ligand_Histological_Type, Ligand, Sending_Cell_Type, Ligand_Correlation,
+               Receptor_Histological_Type, Receptor, Receiving_Cell_Type, Receptor_Correlation)
+      
+      results = bind_rows(results, meaningful_pairs)
+    }
+  }
+  write_csv(results, file.path(output_dir, "meaningful_pairs.csv"))
+  return(list(ligand_medians = ligand_medians, receptor_medians = receptor_medians, meaningful_pairs = results))
 }
