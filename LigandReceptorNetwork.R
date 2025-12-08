@@ -284,3 +284,70 @@ median_eigengene_correlations = function(
   write_csv(results, file.path(output_dir, "meaningful_pairs.csv"))
   return(list(ligand_medians = ligand_medians, receptor_medians = receptor_medians, meaningful_pairs = results))
 }
+
+#Compute direct LR correlations for a single subset (no eigengene calculations)
+compute_direct_lr_correlations = function(subset_obj, subset_label, lr_pairs) {
+  
+  #Filter LR pairs present in the subset
+  lr_pairs_present = lr_pairs %>%
+    filter(Ligand %in% rownames(subset_obj) & Receptor %in% rownames(subset_obj))
+  if(nrow(lr_pairs_present) == 0) return(NULL)
+  
+  #Get expression matrix
+  expr_mat = as.matrix(GetAssayData(subset_obj, assay = "SCT", slot = "data"))
+  
+  #Rank transform rows
+  expr_rank = t(apply(expr_mat, 1, rank, ties.method = "average"))
+  n = ncol(expr_mat)
+  
+  #Compute correlations for each LR pair
+  results = lr_pairs_present %>%
+    rowwise() %>%
+    mutate(
+      rho = cor(expr_rank[Ligand, ], expr_rank[Receptor, ]),
+      tval = rho * sqrt((n - 2) / (1 - rho^2)),
+      pval = 2 * pt(-abs(tval), df = n - 2),
+      subset = subset_label
+    ) %>%
+    ungroup() %>%
+    select(subset, Ligand, Receptor, rho, pval)
+  return(results)
+}
+
+#Compute correlations across multiple subsets and summarize
+compute_lr_correlations_multi = function(subsets_list, subset_names, lr_pairs, output_file = NULL) {
+  
+  #Compute correlations for all subsets
+  all_results = mapply(
+    compute_direct_lr_correlations,
+    subset_obj = subsets_list,
+    subset_label = subset_names,
+    MoreArgs = list(lr_pairs = lr_pairs),
+    SIMPLIFY = FALSE
+  ) %>%
+    bind_rows()
+  
+  #Pivot to wide format and compute median correlations per histological type
+  df_wide = all_results %>%
+    select(subset, Ligand, Receptor, rho) %>%
+    pivot_wider(
+      id_cols = c(Ligand, Receptor),
+      names_from = subset,
+      values_from = rho,
+      values_fn = list(rho = mean)
+    )
+  
+  #Compute median correlations for each histological type
+  df_wide = df_wide %>%
+    rowwise() %>%
+    mutate(
+      median_leading_edge = median(c_across(starts_with("leading_edge")), na.rm = TRUE),
+      median_cellular_tumor = median(c_across(starts_with("cellular_tumor")), na.rm = TRUE),
+      median_infiltrating_tumor = median(c_across(starts_with("infiltrating_tumor")), na.rm = TRUE)
+    ) %>%
+    ungroup()
+  
+  #Save to file
+  write.csv(df_wide, output_file, row.names = FALSE)
+  return(df_wide)
+}
