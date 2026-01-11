@@ -331,7 +331,6 @@ compute_lr_correlations_multi = function(subsets_list, subset_names, lr_pairs) {
   
   #Save to file
   write.csv(df_wide, output_file, row.names = FALSE)
-  return(df_wide)
 }
 
 ##############################
