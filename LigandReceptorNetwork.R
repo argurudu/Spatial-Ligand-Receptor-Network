@@ -265,7 +265,6 @@ median_eigengene_correlations = function(
     }
   }
   write_csv(results, file.path(output_dir, "meaningful_pairs.csv"))
-  return(list(ligand_medians = ligand_medians, receptor_medians = receptor_medians, meaningful_pairs = results))
 }
 
 #Compute direct LR correlations for a single subset (no eigengene calculations)
@@ -298,7 +297,7 @@ compute_direct_lr_correlations = function(subset_obj, subset_label, lr_pairs) {
 }
 
 #Compute correlations across multiple subsets and summarize
-compute_lr_correlations_multi = function(subsets_list, subset_names, lr_pairs, output_file = NULL) {
+compute_lr_correlations_multi = function(subsets_list, subset_names, lr_pairs) {
   
   #Compute correlations for all subsets
   all_results = mapply(
@@ -353,10 +352,23 @@ interactions = MapInteractions(
 write.csv(interactions, "GSE197543_scSignalMap.csv")
 
 #Example on UKF_243 sample
-run_spatial_pipeline = function("UKF_243",
-                                data_path,
-                                coordinates_files,
-                                annotated_image_file,
-                                "leading_edge",
-                                sct_assay = "Spatial",
-                                cores = 4)
+lr_pairs = read.csv('LR_pairs_output_GSE197543.csv', header=TRUE) #output from scSignalMap
+UKF_243_coordinates = ["leading_edge_UKF_243_coordinates.csv"] #manual annotations for subset
+run_spatial_pipeline("UKF_243",
+                     "UKF_243_data/spatial",
+                     UKF_243_coordinates,
+                     "UKF_243/spatial/tissue_lowres_image_PJanno.png",
+                     "cellular_tumor",
+                     sct_assay = "Spatial",
+                     cores = 4)
+
+median_eigengene_correlations(0.3,
+                              histological_regions = c("leading_edge", "cellular_tumor", "infiltrating_tumor"),
+                              ligand_dir = "L_vs_markers",
+                              receptor_dir = "R_vs_markers",
+                              lr_pairs_file = lr_pairs, 
+                              output_dir = "mined_correlations")
+
+compute_lr_correlations_multi(subsets_list, #list of Seurat Objects per subset
+                              subset_names, #list of subset names as strings
+                              lr_pairs)
