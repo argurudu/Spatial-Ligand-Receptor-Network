@@ -79,23 +79,6 @@ correlation_calc = function(expr_mat, eigengenes) {
   return(cor_full)
 }
 
-##############################
-#### Main Seurat Pipeline ####
-##############################
-
-#Run scSignalMap on cell-clustered, scRNA-seq GBM sample to produce differentially-expressed markers and LR pairs
-scRNA_object = readRDS("/Users/SRG15/Desktop/spatial-seq/GSE197543/GSE197543_normalized_ensembl.rds")
-interactions = MapInteractions(
-  seurat_obj,
-  group_by = "CellAnnotationMerged",
-  avg_log2FC_gte = 0.25,
-  p_val_adj_lte = 0.05,
-  min_pct = 0.1,
-  species = "human",
-  gene_id = "ensembl"
-)
-write.csv(interactions, "GSE197543_scSignalMap.csv")
-
 #Function to run spatial analysis pipeline after scSignalMap
 run_spatial_pipeline = function(sample_id, data_path, coordinates_files, annotated_image_file, remaining_subset, sct_assay = "Spatial", cores = 4) {
 
@@ -351,3 +334,29 @@ compute_lr_correlations_multi = function(subsets_list, subset_names, lr_pairs, o
   write.csv(df_wide, output_file, row.names = FALSE)
   return(df_wide)
 }
+
+##############################
+#### Main Seurat Pipeline ####
+##############################
+
+#Run scSignalMap on cell-clustered, scRNA-seq GBM sample to produce differentially-expressed markers and LR pairs
+scRNA_object = readRDS("/Users/SRG15/Desktop/spatial-seq/GSE197543/GSE197543_normalized_ensembl.rds")
+interactions = MapInteractions(
+  seurat_obj,
+  group_by = "CellAnnotationMerged",
+  avg_log2FC_gte = 0.25,
+  p_val_adj_lte = 0.05,
+  min_pct = 0.1,
+  species = "human",
+  gene_id = "ensembl"
+)
+write.csv(interactions, "GSE197543_scSignalMap.csv")
+
+#Example on UKF_243 sample
+run_spatial_pipeline = function("UKF_243",
+                                data_path,
+                                coordinates_files,
+                                annotated_image_file,
+                                "leading_edge",
+                                sct_assay = "Spatial",
+                                cores = 4)
