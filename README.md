@@ -6,7 +6,3 @@ The proposed pipeline carries out the following steps of analysis on a given set
 - Compute eigengenes for cell type markers within each spatial subset
 - Calculate ligand and receptor correlations with cell-type eigengenes, and with direct spatial spots
 - Aggregate correlations across multiple samples and subsets
-
-```R
-print('hello world')
-```
