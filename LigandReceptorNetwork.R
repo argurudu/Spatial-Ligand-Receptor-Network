@@ -33,6 +33,14 @@ MANUALLY_DEFINED_MARKERS = list(
   tumor = c('PRC1','CDKN2A', 'PTPRZ1')
 )
 
+#' Add SCEVAN metadata to Seurat object
+#'
+#' Merges selected columns from SCEVAN results into Seurat metadata.
+#'
+#' @param seurat_obj Seurat object
+#' @param results_obj Data frame returned by SCEVAN
+#' @param prefix Prefix for metadata column names
+#' @return Seurat object with SCEVAN metadata added
 add_scevan_meta = function(seurat_obj, results_obj, prefix = "SCEVAN") {
   if (is.data.frame(results_obj) && !is.null(rownames(results_obj))) {
     common = intersect(rownames(results_obj), colnames(seurat_obj))
@@ -53,6 +61,12 @@ add_scevan_meta = function(seurat_obj, results_obj, prefix = "SCEVAN") {
   return(seurat_obj)
 }
 
+#' Compute eigengene from expression matrix
+#'
+#' Performs PCA and returns the first principal component as the eigengene.
+#'
+#' @param m Expression matrix
+#' @return List containing PC1 vector and variance explained
 get_eigengene = function(m) {
   pca1 = prcomp(m)
   varExp = summary(pca1)$importance[2,1]
@@ -64,12 +78,26 @@ get_eigengene = function(m) {
   }
 }
 
+#' Compute eigengene vector for a gene set
+#'
+#' Calculates eigengene values for selected genes.
+#'
+#' @param seurat_obj Seurat object
+#' @param genes Vector of gene names
+#' @return Eigengene vector
 compute_eigengene_vector = function(seurat_obj, genes) {
   expr_mat = seurat_obj@assays$SCT@scale.data[genes, , drop=FALSE]
   eig_res = get_eigengene(expr_mat)
   return(eig_res[[1]])
 }
 
+#' Calculate Spearman correlations
+#'
+#' Computes Spearman correlations between gene expression and eigengenes
+#'
+#' @param expr_mat Expression matrix
+#' @param eigengenes Eigengene matrix
+#' @return Correlation matrix
 correlation_calc = function(expr_mat, eigengenes) {
   valid_cols = colSums(is.na(eigengenes)) < nrow(eigengenes)
   cor_valid = cor(t(expr_mat), eigengenes[, valid_cols], method = "spearman")
@@ -79,7 +107,19 @@ correlation_calc = function(expr_mat, eigengenes) {
   return(cor_full)
 }
 
-#Function to run spatial analysis pipeline after scSignalMap
+#' Run spatial transcriptomics analysis pipeline
+#'
+#' Loads Visium data, subsets annotated regions, runs SCEVAN, computes eigengenes,
+#' and correlates ligand/receptor expression with cell-type signatures.
+#'
+#' @param sample_id Sample name
+#' @param data_path Path to spatial data
+#' @param coordinates_files CSV files defining histological region borders within spatial sample
+#' @param annotated_image_file Manually annotated tissue image
+#' @param remaining_subset Name for unannotated cells (remaining group not included in coordinates_files)
+#' @param sct_assay Assay used for SCTransform
+#' @param cores Number of CPU cores
+#' @return Writes correlation CSV files
 run_spatial_pipeline = function(sample_id, data_path, coordinates_files, annotated_image_file, remaining_subset, sct_assay = "Spatial", cores = 4) {
 
   #Load Seurat object with annotated image
@@ -179,7 +219,18 @@ run_spatial_pipeline = function(sample_id, data_path, coordinates_files, annotat
   write.csv(cor_receptors, paste0("LR_correlations/", sample_id, "_", region, "_receptor_vs_eigengene.csv"))
 }
 
-#Calculate median eigengene correlations
+#' Compute median eigengene correlations across regions
+#'
+#' Aggregates ligand and receptor correlations across samples and
+#' identifies meaningful LR pairs based on correlation thresholds.
+#'
+#' @param correlation_threshold Minimum correlation cutoff
+#' @param histological_regions List of region names
+#' @param ligand_dir Directory of ligand correlation files
+#' @param receptor_dir Directory of receptor correlation files
+#' @param lr_pairs_file Ligand-receptor pair CSV
+#' @param output_dir Output directory
+#' @return Writes median correlations and filtered LR pairs
 median_eigengene_correlations = function(
   correlation_threshold,
   histological_regions = c("leading_edge", "cellular_tumor", "infiltrating_tumor"),
@@ -267,7 +318,14 @@ median_eigengene_correlations = function(
   write_csv(results, file.path(output_dir, "meaningful_pairs.csv"))
 }
 
-#Compute direct LR correlations for a single subset (no eigengene calculations)
+#' Compute direct ligand-receptor correlations for a histological region
+#'
+#' Calculates Spearman correlations for ligand-receptor pairs within one Seurat subset.
+#'
+#' @param subset_obj Seurat object subset
+#' @param subset_label Name of region/subset
+#' @param lr_pairs Ligand-receptor dataframe
+#' @return Dataframe of correlations and p-values
 compute_direct_lr_correlations = function(subset_obj, subset_label, lr_pairs) {
   
   #Filter LR pairs present in the subset
@@ -296,7 +354,15 @@ compute_direct_lr_correlations = function(subset_obj, subset_label, lr_pairs) {
   return(results)
 }
 
-#Compute correlations across multiple subsets and summarize
+#' Compute LR correlations across multiple subsets
+#'
+#' Runs ligand-receptor correlation analysis across multiple regions and
+#' summarizes median correlations by histological type.
+#'
+#' @param subsets_list List of Seurat objects
+#' @param subset_names List of subset names
+#' @param lr_pairs Ligand-receptor dataframe
+#' @return Writes summary CSV file
 compute_lr_correlations_multi = function(subsets_list, subset_names, lr_pairs) {
   
   #Compute correlations for all subsets
