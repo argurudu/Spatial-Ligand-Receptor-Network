@@ -12,8 +12,6 @@ library(readr)
 install_github("miccec/yaGST")
 install_github("AntonioDeFalco/SCEVAN")
 library(SCEVAN)
-install_github('plaisier-lab/scSignalMap/scSignalMap')
-library(scSignalMap)
 
 #Canonical Markers for all clustered cell types, appended to differentially-expressed cell type markers produced by scSignalMap
 MANUALLY_DEFINED_MARKERS = list(
