@@ -60,18 +60,18 @@ median_eigengene_correlations(
   histological_regions = c("leading_edge", "cellular_tumor", "infiltrating_tumor"),
   ligand_dir = "L_vs_markers",
   receptor_dir = "R_vs_markers",
-  lr_pairs_file = "scSignalMap_LR_pairs.csv",
+  lr_pairs = lr_pairs,
   output_dir = "mined_correlations"
 )
 
 #Compute direct ligand-receptor correlations on all samples
-lr_pairs = read.csv("scSignalMap_results.csv")
+lr_pairs = read.csv("scSignalMap_LR_pairs.csv")
 subset_names = c(
   "UKF_251_leading_edge","UKF_251_cellular_tumor","UKF_251_infiltrating_tumor",
-  "UKF_243_leading_edge","UKF_243_cellular_tumor"
-  "UKF_260_leading_edge","UKF_260_cellular_tumor"
-  "UKF_266_leading_edge","UKF_266_cellular_tumor"
-  "UKF_269_leading_edge","UKF_269_cellular_tumor"
+  "UKF_243_leading_edge","UKF_243_cellular_tumor",
+  "UKF_260_leading_edge","UKF_260_cellular_tumor",
+  "UKF_266_leading_edge","UKF_266_cellular_tumor",
+  "UKF_269_leading_edge","UKF_269_cellular_tumor",
   "UKF_334_leading_edge","UKF_334_cellular_tumor"
 )
 compute_lr_correlations_multi(
