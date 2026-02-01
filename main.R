@@ -6,7 +6,7 @@
 source("LigandReceptorNetwork.R")
 
 #Run scSignalMap on cell-clustered scRNA-seq GBM sample to produce differentially-expressed markers and LR pairs
-scRNA_object = readRDS("/Users/SRG15/Desktop/spatial-seq/GSE197543/GSE197543_normalized_ensembl.rds")
+scRNA_object = readRDS("scRNA-seq_sample.rds")
 interactions = MapInteractions(
   seurat_obj,
   group_by = "CellAnnotationMerged", #name of column with cell type annotations
