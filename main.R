@@ -36,6 +36,7 @@ sample_coords = list(
 eigengene_markers = read.csv("eigengene_markers.csv") #file with MANUALLY_DEFINED_MARKERS appended to differentially-expressed markers produced by scSignalMap
 lr_pairs = read.csv("scSignalMap_LR_pairs.csv") #file with LR pairs produced by scSignalMap
 subsets_list = list()
+subset_names = c()
 
 for (sample_id in names(sample_coords)) {
   cat("Processing sample:", sample_id, "\n")
@@ -51,7 +52,9 @@ for (sample_id in names(sample_coords)) {
     cores = 4
   )
   for (region in names(region_subsets)) {
-    subsets_list[[paste0(sample_id, "_", region)]] = region_subsets[[region]]
+    name = paste0(sample_id, "_", region),
+    subsets_list[[paste0(sample_id, "_", region)]] = region_subsets[[region]],
+    subset_names = c(subset_names, name)
   }
 }
 #Compute medians after all samples run
@@ -66,14 +69,6 @@ median_eigengene_correlations(
 
 #Compute direct ligand-receptor correlations on all samples
 lr_pairs = read.csv("scSignalMap_LR_pairs.csv")
-subset_names = c(
-  "UKF_251_leading_edge","UKF_251_cellular_tumor","UKF_251_infiltrating_tumor",
-  "UKF_243_leading_edge","UKF_243_cellular_tumor",
-  "UKF_260_leading_edge","UKF_260_cellular_tumor",
-  "UKF_266_leading_edge","UKF_266_cellular_tumor",
-  "UKF_269_leading_edge","UKF_269_cellular_tumor",
-  "UKF_334_leading_edge","UKF_334_cellular_tumor"
-)
 compute_lr_correlations_multi(
   subsets_list,
   subset_names,
