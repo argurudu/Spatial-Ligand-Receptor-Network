@@ -2,8 +2,10 @@
 #### Main Seurat Pipeline ####
 ##############################
 
-#Import functions
+#Import statements
 source("LigandReceptorNetwork.R")
+install_github('plaisier-lab/scSignalMap/scSignalMap')
+library(scSignalMap)
 
 #Run scSignalMap on cell-clustered scRNA-seq GBM sample to produce differentially-expressed markers and LR pairs
 scRNA_object = readRDS("scRNA-seq_sample.rds")
@@ -16,7 +18,7 @@ interactions = MapInteractions(
   species = "human",
   gene_id = "ensembl"
 )
-write.csv(interactions, "scSignalMap_results.csv")
+write.csv(interactions, "scSignalMap_LR_pairs.csv")
 
 #spatialRNA-seq Sample Names
 samples = c(
@@ -28,6 +30,8 @@ samples = c(
   "UKF_334"
 )
 
+eigengene_markers = read.csv("scSignalMap_results.csv") #file with MANUALLY_DEFINED_MARKERS & differentially-expressed markers produced by scSignalMap
+
 for (sample_id in samples) {
   cat("Processing sample:", sample_id, "\n")
   coord_file = paste0("leading_edge_", sample_id, "_coordinates.csv")
@@ -37,6 +41,7 @@ for (sample_id in samples) {
     c(coord_file),
     paste0(sample_id, "/spatial/tissue_lowres_image_annotated.png"),
     "cellular_tumor",
+    eigengene_markers
     sct_assay = "Spatial",
     cores = 4
   )
@@ -47,12 +52,20 @@ median_eigengene_correlations(
   histological_regions = c("leading_edge", "cellular_tumor", "infiltrating_tumor"),
   ligand_dir = "L_vs_markers",
   receptor_dir = "R_vs_markers",
-  lr_pairs_file = "scSignalMap_results.csv",
+  lr_pairs_file = "scSignalMap_LR_pairs.csv",
   output_dir = "mined_correlations"
 )
 
 #Compute direct ligand-receptor correlations on all samples
 lr_pairs = read.csv("scSignalMap_results.csv")
+subsets_names = c(
+  "UKF_251_leading_edge","UKF_251_cellular_tumor","UKF_251_infiltrating_tumor",
+  "UKF_243_leading_edge","UKF_243_cellular_tumor"
+  "UKF_260_leading_edge","UKF_260_cellular_tumor"
+  "UKF_266_leading_edge","UKF_266_cellular_tumor"
+  "UKF_269_leading_edge","UKF_269_cellular_tumor"
+  "UKF_334_leading_edge","UKF_334_cellular_tumor"
+)
 compute_lr_correlations_multi(
   subsets_list,
   subset_names,
