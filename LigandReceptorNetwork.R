@@ -120,7 +120,7 @@ correlation_calc = function(expr_mat, eigengenes) {
 #' @param sct_assay Assay used for SCTransform
 #' @param cores Number of CPU cores
 #' @return Writes correlation CSV files
-run_spatial_pipeline = function(sample_id, data_path, coordinates_files, annotated_image_file, remaining_subset, eigengene_markers, sct_assay = "Spatial", cores = 4) {
+run_spatial_pipeline = function(sample_id, data_path, coordinates_files, annotated_image_file, remaining_subset, eigengene_markers, lr_pairs, sct_assay = "Spatial", cores = 4) {
 
   #Load Seurat object with annotated image
   cat("Loading Spatial Data for...", sample_id, "...\n")
@@ -191,7 +191,6 @@ run_spatial_pipeline = function(sample_id, data_path, coordinates_files, annotat
   }
 
   #Compute correlations between ligands/receptors and eigengenes
-  lr_pairs = read.csv('/Users/SRG15/Desktop/spatial-seq/LR/LR_pairs_output_GSE197543.csv', header=TRUE)
   ligands = unique(lr_pairs$Ligand)
   receptors = unique(lr_pairs$Receptor)
 
@@ -233,16 +232,16 @@ run_spatial_pipeline = function(sample_id, data_path, coordinates_files, annotat
 #' @return Writes median correlations and filtered LR pairs
 median_eigengene_correlations = function(
   correlation_threshold,
-  histological_regions = c("leading_edge", "cellular_tumor", "infiltrating_tumor"),
-  ligand_dir = ".../spatial-seq/L_vs_markers",
-  receptor_dir = ".../spatial-seq/R_vs_markers",
-  lr_pairs_file = ".../spatial-seq/LR/LR_pairs_output_GSE197543.csv",
-  output_dir = ".../spatial-seq/mined_correlations"
+  histological_regions,
+  ligand_dir,
+  receptor_dir,
+  lr_pairs_file,
+  output_dir
 ) {
   if(!dir.exists(output_dir)) dir.create(output_dir)
   
   #Read LR pairs
-  lr_pairs = read_csv(lr_pairs_file) %>% distinct(Ligand, Receptor, .keep_all = TRUE)
+  lr_pairs = lr_pairs %>% distinct(Ligand, Receptor, .keep_all = TRUE)
   
   #Define markers
   non_tumor_eigengenes = c('macrophage_m1','macrophage_m2','bcell','endothelial','smooth_muscle',
