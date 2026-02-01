@@ -30,7 +30,8 @@ samples = c(
   "UKF_334"
 )
 
-eigengene_markers = read.csv("scSignalMap_results.csv") #file with MANUALLY_DEFINED_MARKERS & differentially-expressed markers produced by scSignalMap
+eigengene_markers = read.csv("eigengene_markers.csv") #file with MANUALLY_DEFINED_MARKERS appended to differentially-expressed markers produced by scSignalMap
+lr_pairs = read.csv("scSignalMap_LR_pairs.csv") #file with LR pairs produced by scSignalMap
 
 for (sample_id in samples) {
   cat("Processing sample:", sample_id, "\n")
@@ -41,7 +42,8 @@ for (sample_id in samples) {
     c(coord_file),
     paste0(sample_id, "/spatial/tissue_lowres_image_annotated.png"),
     "cellular_tumor",
-    eigengene_markers
+    eigengene_markers,
+    lr_pairs,
     sct_assay = "Spatial",
     cores = 4
   )
