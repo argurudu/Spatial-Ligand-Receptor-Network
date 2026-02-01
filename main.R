@@ -20,26 +20,29 @@ interactions = MapInteractions(
 )
 write.csv(interactions, "scSignalMap_LR_pairs.csv")
 
-#spatialRNA-seq Sample Names
-samples = c(
-  "UKF_251",
-  "UKF_243",
-  "UKF_260",
-  "UKF_266",
-  "UKF_269",
-  "UKF_334"
+#Loading sample coordinates
+sample_coords = list(
+  UKF_251 = c(
+    "leading_edge_UKF_251_coordinates.csv",
+    "infiltrating_tumor_UKF_251_coordinates.csv"
+  ),
+  UKF_243 = c("Coordinates-For-Histological-Subsets/leading_edge_UKF_243_coordinates.csv"),
+  UKF_260 = c("Coordinates-For-Histological-Subsets/leading_edge_UKF_260_coordinates.csv"),
+  UKF_266 = c("Coordinates-For-Histological-Subsets/leading_edge_UKF_266_coordinates.csv"),
+  UKF_269 = c("Coordinates-For-Histological-Subsets/leading_edge_UKF_269_coordinates.csv"),
+  UKF_334 = c("Coordinates-For-Histological-Subsets/leading_edge_UKF_334_coordinates.csv")
 )
 
 eigengene_markers = read.csv("eigengene_markers.csv") #file with MANUALLY_DEFINED_MARKERS appended to differentially-expressed markers produced by scSignalMap
 lr_pairs = read.csv("scSignalMap_LR_pairs.csv") #file with LR pairs produced by scSignalMap
+subsets_list = list()
 
-for (sample_id in samples) {
+for (sample_id in names(sample_coords)) {
   cat("Processing sample:", sample_id, "\n")
-  coord_file = paste0("leading_edge_", sample_id, "_coordinates.csv")
-  run_spatial_pipeline(
+  region_subsets = run_spatial_pipeline(
     sample_id,
     paste0(sample_id, "_data/spatial"),
-    c(coord_file),
+    sample_coords[[sample_id]],
     paste0(sample_id, "/spatial/tissue_lowres_image_annotated.png"),
     "cellular_tumor",
     eigengene_markers,
@@ -47,6 +50,9 @@ for (sample_id in samples) {
     sct_assay = "Spatial",
     cores = 4
   )
+  for (region in names(region_subsets)) {
+    subsets_list[[paste0(sample_id, "_", region)]] = region_subsets[[region]]
+  }
 }
 #Compute medians after all samples run
 median_eigengene_correlations(
@@ -60,7 +66,7 @@ median_eigengene_correlations(
 
 #Compute direct ligand-receptor correlations on all samples
 lr_pairs = read.csv("scSignalMap_results.csv")
-subsets_names = c(
+subset_names = c(
   "UKF_251_leading_edge","UKF_251_cellular_tumor","UKF_251_infiltrating_tumor",
   "UKF_243_leading_edge","UKF_243_cellular_tumor"
   "UKF_260_leading_edge","UKF_260_cellular_tumor"
