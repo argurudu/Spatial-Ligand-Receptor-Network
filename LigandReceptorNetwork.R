@@ -216,6 +216,7 @@ run_spatial_pipeline = function(sample_id, data_path, coordinates_files, annotat
   }
   write.csv(cor_ligands, paste0("LR_correlations/", sample_id, "_", region, "_ligand_vs_eigengene.csv"))
   write.csv(cor_receptors, paste0("LR_correlations/", sample_id, "_", region, "_receptor_vs_eigengene.csv"))
+  return(region_subsets)
 }
 
 #' Compute median eigengene correlations across regions
