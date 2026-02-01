@@ -13,10 +13,10 @@ Spatial coordinates separating histological regions (ex: leading edge, cellular 
 dim_plot = SpatialDimPlot(seurat_object, interactive = TRUE)
 ```
 
-After segmenting the main Seurat object into histological regions, the subsets were plotted individually to confirm that spatial spots were correctly divided across a border on the tumor slice.
+After segmenting the main Seurat object into histological regions, the subsets were plotted individually to confirm that spatial spots were correctly divided across their border on the tumor slice.
 ```R
 leading_edge_dim_plot = SpatialDimPlot(leading_edge, interactive = TRUE)
 cellular_tumor_dim_plot = SpatialDimPlot(cellular_tumor, interactive = TRUE)
 ```
 
-Both x and y coordinates separating regions were recorded for all 6 samples tested, located under Coordinates-For-Histological-Subsets. 
+All (x, y) coordinates separating regions were recorded for the six samples tested, located under Coordinates-For-Histological-Subsets. 
