@@ -213,9 +213,9 @@ run_spatial_pipeline = function(sample_id, data_path, coordinates_files, annotat
       ligand_vs_eigengene = cor_ligands,
       receptor_vs_eigengene = cor_receptors
     )
+    write.csv(cor_ligands, paste0("LR_correlations/", sample_id, "_", region, "_ligand_vs_eigengene.csv"))
+    write.csv(cor_receptors, paste0("LR_correlations/", sample_id, "_", region, "_receptor_vs_eigengene.csv"))
   }
-  write.csv(cor_ligands, paste0("LR_correlations/", sample_id, "_", region, "_ligand_vs_eigengene.csv"))
-  write.csv(cor_receptors, paste0("LR_correlations/", sample_id, "_", region, "_receptor_vs_eigengene.csv"))
   return(region_subsets)
 }
 
@@ -236,7 +236,7 @@ median_eigengene_correlations = function(
   histological_regions,
   ligand_dir,
   receptor_dir,
-  lr_pairs_file,
+  lr_pairs,
   output_dir
 ) {
   if(!dir.exists(output_dir)) dir.create(output_dir)
@@ -396,5 +396,5 @@ compute_lr_correlations_multi = function(subsets_list, subset_names, lr_pairs) {
     ungroup()
   
   #Save to file
-  write.csv(df_wide, output_file, row.names = FALSE)
+  write.csv(df_wide, "direct_lr_correlations.csv", row.names = FALSE)
 }
