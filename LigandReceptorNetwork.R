@@ -120,7 +120,7 @@ correlation_calc = function(expr_mat, eigengenes) {
 #' @param sct_assay Assay used for SCTransform
 #' @param cores Number of CPU cores
 #' @return Writes correlation CSV files
-run_spatial_pipeline = function(sample_id, data_path, coordinates_files, annotated_image_file, remaining_subset, sct_assay = "Spatial", cores = 4) {
+run_spatial_pipeline = function(sample_id, data_path, coordinates_files, annotated_image_file, remaining_subset, eigengene_markers, sct_assay = "Spatial", cores = 4) {
 
   #Load Seurat object with annotated image
   cat("Loading Spatial Data for...", sample_id, "...\n")
