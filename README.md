@@ -1,4 +1,4 @@
-# Spatial-Ligand-Receptor-Network
+# Spatial Ligand-Receptor Network
 
 The proposed pipeline carries out the following steps of analysis on a given set of annotated spatial RNA-seq samples:
 - Segment histological regions for downstream analysis
